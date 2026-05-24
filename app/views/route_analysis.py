@@ -149,7 +149,7 @@ def render_route_map(result: dict) -> None:
 
 
 def render_recommendations(result: dict) -> None:
-    st.subheader("AI-Based Recommendations")
+    st.subheader("Recommendations")
 
     recommendations = result.get("recommendations")
     if not recommendations:
@@ -222,7 +222,7 @@ def render_recommendations(result: dict) -> None:
 
 def render_route_analysis_page() -> None:
     st.title("Route Risk Prediction")
-    st.caption("Enter source and destination to simulate route-based accident risk prediction.")
+    st.caption("Enter source and destination to perform accident risk prediction.")
 
     with st.form("route_analysis_form", clear_on_submit=False):
         col1, col2 = st.columns(2)

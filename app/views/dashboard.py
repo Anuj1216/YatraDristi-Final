@@ -114,13 +114,13 @@ def render_dashboard_page() -> None:
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        render_metric_card("Routes Analyzed", str(stats["routes_analyzed"]), "Accident records in working dataset")
+        render_metric_card("Routes Analyzed", str(stats["routes_analyzed"]), "Accident Records in Dataset")
     with col2:
-        render_metric_card("High Risk Routes", str(stats["high_risk_routes"]), "Estimated high-risk historical cases")
+        render_metric_card("High Risk Routes", str(stats["high_risk_routes"]), "Historical Routes with High Risk")
     with col3:
-        render_metric_card("Hotspots Identified", str(stats["hotspots_identified"]), "Accident-prone locations")
+        render_metric_card("Hotspots Identified", str(stats["hotspots_identified"]), "Accident Hotspots in Dataset")
     with col4:
-        render_metric_card("Active Alerts", str(stats["active_alerts"]), "Route and weather alerts")
+        render_metric_card("Active Alerts", str(stats["active_alerts"]), "Current Active Travel Alerts")
 
     st.divider()
 
@@ -133,9 +133,3 @@ def render_dashboard_page() -> None:
         render_current_alerts()
 
     st.divider()
-
-    st.subheader("Top Hotspots Snapshot")
-    if isinstance(stats["top_hotspots"], pd.DataFrame) and not stats["top_hotspots"].empty:
-        st.dataframe(stats["top_hotspots"].head(10), use_container_width=True)
-    else:
-        st.info("No hotspot summary available yet.")
