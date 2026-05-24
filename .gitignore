@@ -1,0 +1,30 @@
+# Virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+.env.example
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Model files
+models/trained/*.pkl
+models/artifacts/*.json
+
+# Processed data
+data/processed/*.csv
+data/exports/*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
