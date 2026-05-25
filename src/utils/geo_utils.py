@@ -12,9 +12,6 @@ def haversine_distance_km(
     lat2: float,
     lon2: float,
 ) -> float:
-    """
-    Compute Haversine distance in kilometers.
-    """
     radius_km = 6371.0
 
     phi1 = math.radians(float(lat1))
@@ -31,9 +28,6 @@ def haversine_distance_km(
 
 
 def route_distance_km(route_points: List[Tuple[float, float]]) -> float:
-    """
-    Total route length from list of (lat, lon) points.
-    """
     if len(route_points) < 2:
         return 0.0
 
@@ -50,14 +44,6 @@ def split_route_into_segments(
     route_points: List[Tuple[float, float]],
     segment_count: int,
 ) -> List[Dict]:
-    """
-    Split route geometry into evenly spaced point segments.
-    Each segment contains:
-    - start point
-    - end point
-    - midpoint
-    - segment distance
-    """
     if len(route_points) < 2:
         return []
 
@@ -103,10 +89,6 @@ def find_nearest_historical_context(
     longitude: float,
     featured_df: pd.DataFrame,
 ) -> Dict:
-    """
-    Find nearest historical point in accident dataset.
-    Returns nearest place information for segment context.
-    """
     if featured_df.empty:
         return {
             "nearest_place_name": "Unknown",

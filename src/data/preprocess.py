@@ -28,10 +28,6 @@ def clean_text(value: Any) -> str:
 
 
 def normalize_place_name(value: Any) -> str:
-    """
-    Normalize place name into a standard controlled place name when possible,
-    but do NOT overwrite coordinates.
-    """
     if pd.isna(value):
         return "Unknown"
 

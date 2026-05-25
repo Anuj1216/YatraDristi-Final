@@ -31,9 +31,6 @@ from src.config.settings import (
 
 
 def load_featured_data() -> pd.DataFrame:
-    """
-    Load the feature-engineered dataset.
-    """
     if not FEATURED_DATA_FILE.exists():
         raise FileNotFoundError(
             f"Feature-engineered dataset not found at: {FEATURED_DATA_FILE}. "
@@ -49,9 +46,6 @@ def load_featured_data() -> pd.DataFrame:
 
 
 def validate_featured_columns(df: pd.DataFrame) -> None:
-    """
-    Validate required columns for model training.
-    """
     missing_columns = [
         column for column in FEATURED_REQUIRED_COLUMNS
         if column not in df.columns
@@ -63,9 +57,6 @@ def validate_featured_columns(df: pd.DataFrame) -> None:
 def prepare_training_data(
     df: pd.DataFrame,
 ) -> Tuple[pd.DataFrame, pd.Series]:
-    """
-    Select model features and target.
-    """
     validate_featured_columns(df)
 
     training_df = df.copy()
@@ -83,9 +74,6 @@ def prepare_training_data(
 
 
 def build_preprocessor() -> ColumnTransformer:
-    """
-    Build preprocessing pipeline for numeric and categorical columns.
-    """
     numeric_pipeline = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="median")),
@@ -110,9 +98,6 @@ def build_preprocessor() -> ColumnTransformer:
 
 
 def build_model_pipeline() -> Pipeline:
-    """
-    Build full ML pipeline: preprocessing + model.
-    """
     preprocessor = build_preprocessor()
 
     model = RandomForestClassifier(
@@ -136,9 +121,6 @@ def build_model_pipeline() -> Pipeline:
 
 
 def encode_target(y: pd.Series) -> Tuple[pd.Series, LabelEncoder]:
-    """
-    Encode target labels into integers.
-    """
     label_encoder = LabelEncoder()
     y_encoded = pd.Series(label_encoder.fit_transform(y), index=y.index)
     return y_encoded, label_encoder
@@ -148,9 +130,6 @@ def split_data(
     X: pd.DataFrame,
     y: pd.Series,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    """
-    Split data into train and test sets.
-    """
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -167,9 +146,6 @@ def evaluate_model(
     y_test: pd.Series,
     label_encoder: LabelEncoder,
 ) -> Dict[str, Any]:
-    """
-    Evaluate model and return metrics.
-    """
     y_pred = pipeline.predict(X_test)
 
     accuracy = accuracy_score(y_test, y_pred)
@@ -208,9 +184,6 @@ def save_artifacts(
     label_encoder: LabelEncoder,
     metrics: Dict[str, Any],
 ) -> None:
-    """
-    Save model, encoders, feature metadata, and metrics.
-    """
     ensure_directories()
 
     joblib.dump(pipeline, MODEL_FILE)
@@ -231,16 +204,6 @@ def save_artifacts(
 
 
 def run_training_pipeline() -> Dict[str, Any]:
-    """
-    Full training pipeline:
-    - load featured data
-    - prepare X, y
-    - encode target
-    - split
-    - train
-    - evaluate
-    - save artifacts
-    """
     df = load_featured_data()
     X, y = prepare_training_data(df)
     y_encoded, label_encoder = encode_target(y)

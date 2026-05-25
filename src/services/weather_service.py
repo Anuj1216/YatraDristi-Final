@@ -16,11 +16,10 @@ from src.config.settings import (
 class WeatherServiceError(Exception):
     """Raised when weather data cannot be fetched or parsed."""
 
-
 def validate_weather_api_key() -> None:
     if not OPENWEATHER_API_KEY:
         raise WeatherServiceError(
-            "OpenWeather API key is missing. Please set OPENWEATHER_API_KEY in your .env file."
+            "OpenWeather API key is missing."
         )
 
 
@@ -110,9 +109,6 @@ def get_current_weather(latitude: float, longitude: float) -> Dict[str, Any]:
 
 
 def fetch_forecast_weather(latitude: float, longitude: float) -> Dict[str, Any]:
-    """
-    Fetch 5-day / 3-hour forecast data from OpenWeather.
-    """
     validate_weather_api_key()
     validate_coordinates(latitude, longitude)
 
@@ -186,9 +182,6 @@ def get_forecast_for_datetime(
     longitude: float,
     target_datetime: datetime,
 ) -> Dict[str, Any]:
-    """
-    Return the nearest available forecast item for the requested datetime.
-    """
     payload = fetch_forecast_weather(latitude=latitude, longitude=longitude)
 
     forecast_list = payload.get("list", [])

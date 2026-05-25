@@ -10,14 +10,6 @@ def clamp_risk_score(score: int) -> int:
 
 
 def get_weather_risk_adjustment(weather: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Apply transparent rule-based weather risk adjustment.
-
-    Adjustment scale:
-    - base score Low=1, Medium=2, High=3
-    - weather may add +0, +1, or +2 total points
-    - final score is clamped between 1 and 3
-    """
     adjustment_points = 0
     reasons: List[str] = []
 
@@ -97,9 +89,6 @@ def adjust_risk_with_weather(
     base_risk: str,
     weather: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """
-    Convert ML base risk into final adjusted risk using weather conditions.
-    """
     if base_risk not in RISK_SCORE_MAP:
         raise ValueError(f"Unknown base risk label: {base_risk}")
 
@@ -125,9 +114,6 @@ def generate_safety_alert(
     adjusted_risk: str,
     weather: Dict[str, Any],
 ) -> str:
-    """
-    Create a short user-facing safety alert.
-    """
     weather_main = str(weather.get("weather_main", "Unknown"))
     visibility_m = int(weather.get("visibility_m", 0))
     wind_speed_mps = float(weather.get("wind_speed_mps", 0.0))

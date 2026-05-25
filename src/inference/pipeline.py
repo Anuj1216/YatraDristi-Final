@@ -25,10 +25,6 @@ def _load_data() -> pd.DataFrame:
 
 
 def _get_place_coordinates(place_name: str, df: pd.DataFrame) -> Tuple[float, float]:
-    """
-    First try dataset coordinates.
-    If not found, use fallback route coordinates.
-    """
     subset = df[df["place_name"] == place_name]
 
     if not subset.empty:
@@ -65,9 +61,6 @@ def _find_places_on_route(
     from_place: str,
     to_place: str,
 ) -> List[str]:
-    """
-    Keep only approved places that actually fall close to the selected route.
-    """
     allowed = place_centers[place_centers["place_name"].isin(KNOWN_PLACE_OPTIONS)].copy()
 
     candidates: List[Tuple[int, str, float]] = []

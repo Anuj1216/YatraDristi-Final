@@ -16,9 +16,6 @@ from src.config.settings import (
 
 
 def load_model_artifacts() -> Dict[str, Any]:
-    """
-    Load trained pipeline, label encoder, feature list, and featured dataset.
-    """
     if not MODEL_FILE.exists():
         raise FileNotFoundError(
             f"Trained model not found at: {MODEL_FILE}. Please complete training first."
@@ -54,9 +51,6 @@ def load_model_artifacts() -> Dict[str, Any]:
 
 
 def clean_text(value: Any) -> str:
-    """
-    Normalize text values for inference consistency.
-    """
     if value is None or pd.isna(value):
         return "unknown"
 
@@ -70,9 +64,6 @@ def clean_text(value: Any) -> str:
 
 
 def clean_place_name(value: Any) -> str:
-    """
-    Normalize place names.
-    """
     if value is None or pd.isna(value):
         return "unknown"
 
@@ -86,9 +77,6 @@ def clean_place_name(value: Any) -> str:
 
 
 def parse_prediction_date(date_value: Any) -> pd.Timestamp:
-    """
-    Parse prediction date input.
-    """
     parsed = pd.to_datetime(date_value, errors="coerce")
     if pd.isna(parsed):
         raise ValueError(f"Invalid date value: {date_value}")
@@ -96,9 +84,6 @@ def parse_prediction_date(date_value: Any) -> pd.Timestamp:
 
 
 def extract_start_hour(time_slot: Any) -> int:
-    """
-    Extract start hour from time slot string.
-    """
     if time_slot is None or pd.isna(time_slot):
         return -1
 
@@ -117,9 +102,6 @@ def extract_start_hour(time_slot: Any) -> int:
 
 
 def extract_end_hour(time_slot: Any) -> int:
-    """
-    Extract end hour from time slot string.
-    """
     if time_slot is None or pd.isna(time_slot):
         return -1
 
@@ -138,9 +120,6 @@ def extract_end_hour(time_slot: Any) -> int:
 
 
 def create_time_band(start_hour: int) -> str:
-    """
-    Convert start hour into time band.
-    """
     if start_hour < 0:
         return "unknown"
     if 0 <= start_hour < 6:
@@ -153,10 +132,6 @@ def create_time_band(start_hour: int) -> str:
 
 
 def estimate_place_accident_count(place_name: str, featured_df: pd.DataFrame) -> int:
-    """
-    Estimate historical accident frequency for the selected place.
-    If not found, return 0.
-    """
     if "place_name" not in featured_df.columns:
         return 0
 
@@ -183,9 +158,6 @@ def build_prediction_record(
     reason: str,
     featured_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    """
-    Build a single prediction record matching model feature columns.
-    """
     parsed_date = parse_prediction_date(date)
 
     start_hour = extract_start_hour(time)
@@ -242,9 +214,6 @@ def predict_base_risk(
     vehicle_involved: str,
     reason: str,
 ) -> Dict[str, Any]:
-    """
-    Predict base accident risk and return class probabilities.
-    """
     artifacts = load_model_artifacts()
     pipeline = artifacts["pipeline"]
     label_encoder = artifacts["label_encoder"]

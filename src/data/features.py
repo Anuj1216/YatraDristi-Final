@@ -14,9 +14,6 @@ from src.config.settings import (
 
 
 def load_processed_data() -> pd.DataFrame:
-    """
-    Load processed dataset from CSV.
-    """
     if not PROCESSED_DATA_FILE.exists():
         raise FileNotFoundError(
             f"Processed dataset not found at: {PROCESSED_DATA_FILE}. "
@@ -35,9 +32,6 @@ def load_processed_data() -> pd.DataFrame:
 
 
 def validate_processed_columns(df: pd.DataFrame) -> None:
-    """
-    Ensure all required processed columns exist.
-    """
     missing_columns = [
         column for column in PROCESSED_REQUIRED_COLUMNS
         if column not in df.columns
@@ -49,10 +43,6 @@ def validate_processed_columns(df: pd.DataFrame) -> None:
 
 
 def extract_start_hour(time_slot: Any) -> int:
-    """
-    Extract the starting hour from a time slot string like '12:00 - 18:00'.
-    Returns -1 if parsing fails.
-    """
     if pd.isna(time_slot):
         return -1
 
@@ -70,10 +60,6 @@ def extract_start_hour(time_slot: Any) -> int:
 
 
 def extract_end_hour(time_slot: Any) -> int:
-    """
-    Extract the ending hour from a time slot string like '12:00 - 18:00'.
-    Returns -1 if parsing fails.
-    """
     if pd.isna(time_slot):
         return -1
 
@@ -91,9 +77,6 @@ def extract_end_hour(time_slot: Any) -> int:
 
 
 def create_time_band(start_hour: int) -> str:
-    """
-    Map hour into broad time band.
-    """
     if start_hour < 0:
         return "unknown"
     if 0 <= start_hour < 6:
@@ -106,9 +89,6 @@ def create_time_band(start_hour: int) -> str:
 
 
 def create_severity_score(row: pd.Series) -> int:
-    """
-    Weighted accident severity score.
-    """
     death = int(row["death"])
     serious_injury = int(row["serious_injury"])
     normal_injury = int(row["normal_injury"])
@@ -118,16 +98,10 @@ def create_severity_score(row: pd.Series) -> int:
 
 
 def create_total_casualties(row: pd.Series) -> int:
-    """
-    Total casualties from all categories.
-    """
     return int(row["death"]) + int(row["serious_injury"]) + int(row["normal_injury"])
 
 
 def classify_risk_level(row: pd.Series) -> str:
-    """
-    Convert severity information into target risk class.
-    """
     death = int(row["death"])
     serious_injury = int(row["serious_injury"])
     normal_injury = int(row["normal_injury"])
@@ -143,9 +117,6 @@ def classify_risk_level(row: pd.Series) -> str:
 
 
 def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Add engineered features from time slot.
-    """
     output_df = df.copy()
 
     output_df["start_hour"] = output_df["time"].apply(extract_start_hour)
@@ -162,9 +133,6 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_severity_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Add severity-based engineered features and target class.
-    """
     output_df = df.copy()
 
     output_df["total_casualties"] = output_df.apply(create_total_casualties, axis=1)
@@ -175,9 +143,6 @@ def add_severity_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_location_frequency_feature(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Add accident frequency per place as a simple historical context feature.
-    """
     output_df = df.copy()
 
     place_counts = output_df["place_name"].value_counts().to_dict()
@@ -187,9 +152,6 @@ def add_location_frequency_feature(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_feature_engineered_dataset(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Full feature engineering pipeline.
-    """
     validate_processed_columns(df)
 
     featured_df = df.copy()
@@ -233,17 +195,11 @@ def build_feature_engineered_dataset(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def save_feature_engineered_data(df: pd.DataFrame) -> None:
-    """
-    Save feature-engineered dataset.
-    """
     ensure_directories()
     df.to_csv(FEATURED_DATA_FILE, index=False)
 
 
 def run_feature_engineering_pipeline() -> Dict[str, Any]:
-    """
-    Load processed data, engineer features, save output, and return summary.
-    """
     processed_df = load_processed_data()
     featured_df = build_feature_engineered_dataset(processed_df)
     save_feature_engineered_data(featured_df)
