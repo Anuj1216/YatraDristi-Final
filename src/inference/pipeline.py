@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import date
+from email.mime import base
+from email.mime import base
 from typing import Any, Dict, List, Tuple
 import pandas as pd
 
@@ -220,6 +223,40 @@ def _generate_recommendations(route_risk: str, highest_segment: Dict[str, Any], 
         ],
     }
 
+def _calculate_hotspot_risk(
+    latitude: float,
+    longitude: float,
+    df: pd.DataFrame,
+) -> str:
+
+    nearby_count = 0
+
+    for _, row in df.iterrows():
+
+        distance = haversine_distance_km(
+            latitude,
+            longitude,
+            float(row["latitude"]),
+            float(row["longitude"])
+        )
+
+        if distance <= 5:
+            nearby_count += 1
+
+    max_count = max(
+        1,
+        df.groupby("place_name").size().max()
+    )
+
+    normalized = nearby_count / max_count
+
+    if normalized >= 0.70:
+        return "High"
+
+    elif normalized >= 0.35:
+        return "Medium"
+
+    return "Low"
 
 def run_route_risk_prediction_pipeline(
     from_place,
@@ -260,21 +297,33 @@ def run_route_risk_prediction_pipeline(
 
     for i, seg in enumerate(segments):
         mid_lat, mid_lon = seg["midpoint"]
+    
+        segment_place = segment_names[i].split("→")[0].strip()
 
         base = predict_base_risk(
             date=date,
             time=time,
-            place_name=from_place,
+            place_name=segment_place,
             latitude=mid_lat,
             longitude=mid_lon,
             vehicle_involved=vehicle_involved,
             reason=reason,
         )
 
-        weather = get_current_weather(mid_lat, mid_lon)
+        weather = get_current_weather(
+            mid_lat,
+            mid_lon
+        )
+
         adjusted = adjust_risk_with_weather(
             base_risk=base["predicted_risk"],
             weather=weather,
+        )
+
+        hotspot_risk = _calculate_hotspot_risk(
+            mid_lat,
+            mid_lon,
+            df
         )
 
         segment_results.append({
@@ -285,7 +334,13 @@ def run_route_risk_prediction_pipeline(
             "midpoint_longitude": round(float(mid_lon), 6),
             "base_risk": base["predicted_risk"],
             "base_confidence": base["confidence"],
-            "adjusted_risk": adjusted["adjusted_risk"],
+            "adjusted_risk":
+                max(
+                    adjusted["adjusted_risk"],
+                    hotspot_risk,
+                    key=lambda x: RISK_SCORE_MAP[x]
+                ),
+            "hotspot_risk": hotspot_risk,
             "weather_adjustment_points": adjusted["weather_adjustment_points"],
             "weather_main": weather["weather_main"],
             "weather_description": weather["weather_description"],

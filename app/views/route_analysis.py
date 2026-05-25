@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date as dt_date
+from datetime import date as dt_date, datetime
 import streamlit as st
 from streamlit_folium import st_folium
 
@@ -221,26 +221,100 @@ def render_recommendations(result: dict) -> None:
 
 
 def render_route_analysis_page() -> None:
-    st.title("Route Risk Prediction")
-    st.caption("Enter source and destination to perform accident risk prediction.")
 
-    with st.form("route_analysis_form", clear_on_submit=False):
+    from datetime import datetime
+
+    st.title("Route Risk Prediction")
+    st.caption(
+        "Enter source and destination to perform accident risk prediction."
+    )
+
+    with st.form(
+        "route_analysis_form",
+        clear_on_submit=False
+    ):
+
         col1, col2 = st.columns(2)
 
         with col1:
-            from_place = st.selectbox("From", options=KNOWN_PLACE_OPTIONS, index=0)
-            travel_date = st.date_input("Travel Date", value=dt_date.today())
+
+            from_place = st.selectbox(
+                "From",
+                options=KNOWN_PLACE_OPTIONS,
+                index=0
+            )
+
+            travel_date = st.date_input(
+                "Travel Date",
+                value=dt_date.today()
+            )
 
         with col2:
-            to_place = st.selectbox("To", options=KNOWN_PLACE_OPTIONS, index=2)
-            travel_time = st.selectbox("Travel Time", options=TIME_OPTIONS, index=3)
 
-        vehicle = st.selectbox("Travel Vehicle", options=VEHICLE_OPTIONS, index=0)
-        submitted = st.form_submit_button("Predict Risk", use_container_width=True)
+            to_place = st.selectbox(
+                "To",
+                options=KNOWN_PLACE_OPTIONS,
+                index=2
+            )
 
+            travel_time = st.selectbox(
+                "Travel Time",
+                options=TIME_OPTIONS,
+                index=3
+            )
+
+        vehicle = st.selectbox(
+            "Travel Vehicle",
+            options=VEHICLE_OPTIONS,
+            index=0
+        )
+
+        submitted = st.form_submit_button(
+            "Predict Risk",
+            use_container_width=True
+        )
+
+    # Do nothing until button pressed
     if submitted:
+
         if from_place == to_place:
-            st.error("From and To cannot be the same.")
+
+            st.error(
+                "From and To cannot be the same."
+            )
+
+            return
+
+
+        current_datetime = datetime.now()
+
+        start_time, end_time = [
+            t.strip()
+            for t in travel_time.split("-")
+        ]
+
+        start_datetime = datetime.strptime(
+            f"{travel_date} {start_time}",
+            "%Y-%m-%d %H:%M"
+        )
+
+        end_datetime = datetime.strptime(
+            f"{travel_date} {end_time}",
+            "%Y-%m-%d %H:%M"
+        )
+
+        if end_time == "23:59":
+
+            end_datetime = end_datetime.replace(
+                second=59
+        )
+
+        if current_datetime > end_datetime:
+
+            st.error(
+                "Selected travel time interval has already ended."
+            )
+
             return
 
         route_input = {
@@ -251,8 +325,12 @@ def render_route_analysis_page() -> None:
             "vehicle": vehicle,
         }
 
-        with st.spinner("Analyzing route risk..."):
+        with st.spinner(
+            "Analyzing route risk..."
+        ):
+
             try:
+
                 result = run_forecast_route_risk_prediction_pipeline(
                     from_place=from_place,
                     to_place=to_place,
@@ -260,26 +338,54 @@ def render_route_analysis_page() -> None:
                     journey_time=travel_time,
                     vehicle_involved=vehicle.lower(),
                     reason="normal_travel",
-                    segment_count=3 if {from_place, to_place} == {"Biratnagar", "Itahari"} else 5,
+                    segment_count=(
+                        3
+                        if {from_place, to_place}
+                        ==
+                        {"Biratnagar", "Itahari"}
+                        else 5
+                    ),
                 )
 
-                st.session_state["latest_route_result"] = result
-                st.session_state["latest_route_input"] = route_input
-                st.session_state["dashboard_alerts"] = build_dashboard_alerts_from_route(result)
+                st.session_state[
+                    "latest_route_result"
+                ] = result
+
+                st.session_state[
+                    "latest_route_input"
+                ] = route_input
+
+                st.session_state[
+                    "dashboard_alerts"
+                ] = build_dashboard_alerts_from_route(
+                    result
+                )
 
             except Exception as exc:
-                st.error(f"Route analysis failed: {exc}")
+
+                st.error(
+                    f"Route analysis failed: {exc}"
+                )
+
                 return
 
-    result = st.session_state.get("latest_route_result")
+    result = st.session_state.get(
+        "latest_route_result"
+    )
 
     if result is None:
         return
 
     render_prediction_summary(result)
+
     st.divider()
+
     render_segmentwise_analysis(result)
+
     st.divider()
+
     render_route_map(result)
+
     st.divider()
+
     render_recommendations(result)
