@@ -43,47 +43,42 @@ def analyze_travel_plan(plan):
 
     alerts = []
 
-    if prediction["route_risk"] == "High":
+    # Check weather across the whole route
 
-        alerts.append(
-            {
-                "title": "High Route Risk",
-                "severity": "High",
-                "message": "This route currently has a high accident probability.",
-            }
-        )
+    has_rain = False
+    low_visibility = False
 
-    elif prediction["route_risk"] == "Medium":
+    for segment in prediction["segment_results"]:
 
-        alerts.append(
-            {
-                "title": "Moderate Route Risk",
-                "severity": "Medium",
-                "message": "Drive carefully because the accident probability is moderate.",
-            }
-        )
+        weather_desc = str(segment["weather_description"]).lower()
 
-    weather_desc = highest["weather_description"].lower()
+        if "rain" in weather_desc or "drizzle" in weather_desc:
+            has_rain = True
 
-    if "rain" in weather_desc or "drizzle" in weather_desc:
+        visibility = segment.get("visibility_m", 0)
+
+        if visibility and visibility < 4000:
+            low_visibility = True
+
+
+    if has_rain:
 
         alerts.append(
             {
                 "title": "Rain Expected",
                 "severity": "Medium",
-                "message": "Rain may reduce road grip and increase braking distance.",
+                "message": "Rain is expected on one or more route segments. Drive carefully.",
             }
         )
 
-    visibility = highest["visibility_m"]
 
-    if visibility and visibility < 4000:
+    if low_visibility:
 
         alerts.append(
             {
                 "title": "Low Visibility",
                 "severity": "High",
-                "message": "Low visibility detected on this route.",
+                "message": "Low visibility detected on one or more route segments.",
             }
         )
 

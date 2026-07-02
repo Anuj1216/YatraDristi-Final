@@ -192,7 +192,7 @@ def _aggregate_route_risk(segment_results: List[Dict[str, Any]]) -> Dict[str, An
     }
 
 
-def _generate_recommendations(route_risk: str, highest_segment: Dict[str, Any], vehicle_involved: str) -> Dict[str, Any]:
+def _generate_recommendations(segment_results, route_risk: str, highest_segment: Dict[str, Any], vehicle_involved: str) -> Dict[str, Any]:
     weather_desc = str(highest_segment.get("weather_description", "")).lower()
     visibility_m = int(highest_segment.get("visibility_m", 0) or 0)
     vehicle_name = vehicle_involved.title()
@@ -221,7 +221,7 @@ def _generate_recommendations(route_risk: str, highest_segment: Dict[str, Any], 
 
     weather_types = []
 
-    for seg in highest_segment.get("all_segments", []):
+    for seg in segment_results:
         weather = seg.get("weather_main")
         if weather and weather not in weather_types:
             weather_types.append(weather)
@@ -449,12 +449,12 @@ def run_route_risk_prediction_pipeline(
         },
     )
 
-    highest_segment["all_segments"] = segment_results
 
     recommendations = _generate_recommendations(
         route_risk=route_agg["route_risk"],
         highest_segment=highest_segment,
         vehicle_involved=vehicle_involved,
+        segment_results=segment_results,
     )
 
     return {
@@ -477,6 +477,7 @@ def run_route_risk_prediction_pipeline(
         "weighted_score": route_agg["weighted_score"],
         "total_distance_km": route_agg["total_distance_km"],
         "highest_segment_risk": highest_segment,
+        "all_segments": segment_results,
         "recommendations": recommendations,
         "ordered_route_places": ordered_places,
     }
