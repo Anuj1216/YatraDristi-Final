@@ -334,7 +334,6 @@ def run_route_risk_prediction_pipeline(
         from datetime import date as date_type
         from datetime import time as time_type
 
-        # Convert date if needed
         if isinstance(date, str):
             date_obj = datetime.strptime(date, "%Y-%m-%d").date()
         elif isinstance(date, date_type):
@@ -342,10 +341,8 @@ def run_route_risk_prediction_pipeline(
         else:
             date_obj = pd.to_datetime(date).date()
 
-        # Convert time if needed
         if isinstance(time, str):
 
-            # Handle ranges like "12:00 - 15:00"
             if "-" in time:
                 start_time = time.split("-")[0].strip()
             else:

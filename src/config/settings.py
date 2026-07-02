@@ -158,7 +158,6 @@ TOP_PLACES = {
     "Letang": {"latitude": 26.76571, "longitude": 87.50664},
 }
 
-# Controlled places used in dropdowns and geo-standardization
 STANDARD_PLACE_COORDINATES = {
     "Biratnagar": {"latitude": 26.45505, "longitude": 87.27007},
     "Itahari": {"latitude": 26.66225, "longitude": 87.27490},
@@ -173,7 +172,6 @@ STANDARD_PLACE_COORDINATES = {
 
 }
 
-# Optional name normalization so similar spellings map to one standard place
 PLACE_NAME_ALIASES = {
     "biratnagar": "Biratnagar",
     "itahari": "Itahari",
@@ -210,7 +208,6 @@ KNOWN_PLACE_OPTIONS = [
     "Biratchowk",
 ]
 
-# Use these only when a place is missing from dataset
 FALLBACK_ROUTE_COORDINATES = {
     "Biratnagar": (26.45505, 87.27007),
     "Itahari": (26.66355, 87.27403),
@@ -224,6 +221,13 @@ FALLBACK_ROUTE_COORDINATES = {
     "Pathari": (26.71400, 87.56000),
     "Karsiya": (26.51500, 87.36000),
     "Biratchowk": (26.6725644,87.3761159),
+}
+
+DASHBOARD_WEATHER_LOCATIONS = {
+    "Biratnagar": (26.4525, 87.2718),
+    "Itahari": (26.6637, 87.2740),
+    "Biratchowk": (26.6460, 87.4170),
+    "Rangeli": (26.6700, 87.5500),
 }
 
 def ensure_directories() -> None:

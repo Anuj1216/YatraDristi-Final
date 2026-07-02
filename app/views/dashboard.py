@@ -9,6 +9,9 @@ from src.database.travel_plan_repository import (
     get_latest_dashboard_analysis,
 )
 
+from src.services.dashboard_weather_service import (
+    get_dashboard_weather,
+)
 
 def render_metric_card(title: str, value: str, subtext: str) -> None:
     st.markdown(
@@ -21,6 +24,39 @@ def render_metric_card(title: str, value: str, subtext: str) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+def render_major_location_weather():
+
+    st.subheader("Current Weather")
+
+    weather = get_dashboard_weather()
+
+    cols = st.columns(4)
+
+    for col, (place, info) in zip(cols, weather.items()):
+
+        with col:
+
+            if info is None:
+                st.error("Unavailable")
+                continue
+
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-title">{place}</div>
+                    <div class="metric-value">
+                        {info["temperature_c"]:.1f}°C
+                    </div>
+                    <div class="metric-subtext">
+                        {info["weather_main"]}<br>
+                        Humidity: {info["humidity_percent"]}%<br>
+                        Wind: {info["wind_speed_mps"]:.1f} m/s
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 @st.cache_data(show_spinner=False)
@@ -168,3 +204,8 @@ def render_dashboard_page() -> None:
         render_current_alerts()
 
     st.divider()
+
+    render_major_location_weather()
+
+    st.divider()
+

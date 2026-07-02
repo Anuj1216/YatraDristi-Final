@@ -39,7 +39,6 @@ def build_dashboard_alerts_from_route(route_result: dict) -> list[dict]:
 
     alerts: list[dict] = []
 
-    # Route risk alerts
     if route_result["route_risk"] == "High":
         alerts.append({
             "level": "red",
@@ -52,7 +51,6 @@ def build_dashboard_alerts_from_route(route_result: dict) -> list[dict]:
             "message": "Moderate accident risk detected. Travel with extra caution.",
         })
 
-    # Weather alerts
     highest_segment = route_result.get("highest_segment_risk")
 
     if highest_segment:
@@ -306,7 +304,6 @@ def render_route_analysis_page() -> None:
             use_container_width=True
         )
 
-    # Do nothing until button pressed
     if submitted:
 
         if from_place == to_place:

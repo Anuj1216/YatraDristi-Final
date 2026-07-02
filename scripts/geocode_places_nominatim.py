@@ -76,7 +76,7 @@ def main():
                 "status": "NOT_FOUND",
             })
 
-        time.sleep(1)  # IMPORTANT: avoid API blocking
+        time.sleep(1)  
 
     result_df = pd.DataFrame(results)
     result_df.to_csv(OUTPUT_FILE, index=False)

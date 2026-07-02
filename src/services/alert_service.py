@@ -43,8 +43,6 @@ def analyze_travel_plan(plan):
 
     alerts = []
 
-    # Check weather across the whole route
-
     has_rain = False
     low_visibility = False
 

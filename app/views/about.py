@@ -91,7 +91,7 @@ recommendations.
         st.markdown(
             """
 **Machine Learning**
-- XGBoost Classifier
+- RandomForestClassifier
 
 **Maps**
 - Folium
@@ -104,86 +104,32 @@ recommendations.
 
     st.divider()
 
-    st.header("Dataset")
+    st.header("Project Supervisor & Team")
 
-    st.write(
-        """
-The prediction model is trained using Nepal road accident data enriched through
-feature engineering. Important attributes include:
+    col1, col2 = st.columns(2)
 
-• Location
+    with col1:
+        st.info(
+            """
+### 👨‍🏫 Project Supervisor
 
-• Date and Time
+**Er. Sushant Bhattarai**
 
-• Vehicle Type
-
-• Accident Cause
-
-• Weather Information
-
-• Latitude & Longitude
-
-The trained model predicts the base accident risk, which is further adjusted
-using current weather conditions to estimate the final travel risk.
-        """
-    )
-
-    st.divider()
-
-    st.header("System Workflow")
-
-    st.markdown(
-        """
-1. User selects origin and destination.
-
-2. Route is generated.
-
-3. Route is divided into segments.
-
-4. Weather data is collected for each segment.
-
-5. Machine learning predicts accident risk.
-
-6. Weather adjustment is applied.
-
-7. Overall route risk is calculated.
-
-8. Recommendations and alerts are generated.
-        """
-    )
-
-    st.divider()
-
-    st.header("Project Information")
-
-    c1, c2 = st.columns(2)
-
-    with c1:
-
-        st.metric(
-            "Version",
-            "1.0"
+Department of Computer Science and Information Technology
+(Mahendra Morang Adarsha Multiple Campus, Biratnagar)
+            """
         )
 
-        st.metric(
-            "Project Type",
-            "Major Project"
+    with col2:
+        st.info(
+            """
+### 👥 Project Team
+
+**Team Members:**
+
+1. Anuj Acharya
+2. Suchana Chapagain
+            """
         )
 
-    with c2:
 
-        st.metric(
-            "Degree",
-            "B.Sc. CSIT"
-        )
-
-        st.metric(
-            "Semester",
-            "7th Semester"
-        )
-
-    st.divider()
-
-    st.info(
-        "YatraDristi is developed for educational and research purposes to support safer travel through data-driven accident risk prediction."
-    )
