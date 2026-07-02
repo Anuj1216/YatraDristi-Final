@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date as dt_date, datetime
+from unittest import result
 import streamlit as st
 from streamlit_folium import st_folium
 
@@ -35,26 +36,47 @@ def risk_badge_html(risk: str) -> str:
 
 
 def build_dashboard_alerts_from_route(route_result: dict) -> list[dict]:
+
     alerts: list[dict] = []
 
+    # Route risk alerts
     if route_result["route_risk"] == "High":
         alerts.append({
             "level": "red",
             "message": "High-risk accident zone detected on one or more road segments.",
         })
 
-    highest_segment = route_result.get("highest_segment_risk")
-    if highest_segment:
-        weather_desc = str(highest_segment.get("weather_description", "")).lower()
-        visibility = highest_segment.get("visibility_m", 0)
+    elif route_result["route_risk"] == "Medium":
+        alerts.append({
+            "level": "yellow",
+            "message": "Moderate accident risk detected. Travel with extra caution.",
+        })
 
-        if "rain" in weather_desc:
+    # Weather alerts
+    highest_segment = route_result.get("highest_segment_risk")
+
+    if highest_segment:
+
+        weather_desc = str(
+            highest_segment.get("weather_description", "")
+        ).lower()
+
+        visibility = highest_segment.get(
+            "visibility_m",
+            0,
+        )
+
+        if "rain" in weather_desc or "drizzle" in weather_desc:
             alerts.append({
                 "level": "yellow",
                 "message": "Rainfall may increase road slipperiness and braking distance.",
             })
 
-        if isinstance(visibility, (int, float)) and visibility and visibility < 4000:
+        if (
+            isinstance(visibility, (int, float))
+            and visibility
+            and visibility < 4000
+        ):
             alerts.append({
                 "level": "blue",
                 "message": "Drive carefully in low-visibility areas.",
@@ -66,9 +88,15 @@ def build_dashboard_alerts_from_route(route_result: dict) -> list[dict]:
 def render_prediction_summary(result: dict) -> None:
     st.subheader("Prediction Summary")
 
-    highest_segment = result.get("highest_segment_risk") or {}
-    weather_main = highest_segment.get("weather_main", "Unknown")
-    weather_desc = highest_segment.get("weather_description", "unknown")
+    weather_types = []
+
+    for seg in result.get("segment_results", []):
+        weather = seg.get("weather_main", "Unknown")
+        if weather not in weather_types:
+            weather_types.append(weather)
+
+    weather_main = " + ".join(weather_types)
+    weather_desc = "Weather varies along the route"
 
     col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -112,9 +140,13 @@ def render_segmentwise_analysis(result: dict) -> None:
         with col1:
             st.markdown(f"**{idx + 1}. {segment['segment_name']}**")
             visibility_km = segment.get("visibility_m", 0) / 1000 if segment.get("visibility_m", 0) else 0
+            weather_text = f'{segment["weather_main"]} ({segment["weather_description"]})'
+
             st.markdown(
-                f'<div class="small-muted">Weather: {segment["weather_main"]} | '
-                f'Visibility: {visibility_km:.1f} km</div>',
+                f'<div class="small-muted">'
+                f'Weather: {weather_text} | '
+                f'Visibility: {visibility_km:.1f} km'
+                f'</div>',
                 unsafe_allow_html=True,
             )
 
@@ -360,6 +392,7 @@ def render_route_analysis_page() -> None:
                 ] = build_dashboard_alerts_from_route(
                     result
                 )
+
 
             except Exception as exc:
 

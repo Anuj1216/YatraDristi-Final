@@ -32,8 +32,13 @@ TRAINING_METRICS_FILE = ARTIFACTS_DIR / "training_metrics.json"
 PREPROCESSOR_FILE = TRAINED_MODELS_DIR / "preprocessor.pkl"
 
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "").strip()
-OPENWEATHER_CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
-OPENWEATHER_FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
+OPENWEATHER_ONECALL_CURRENT_URL = (
+    "https://api.openweathermap.org/data/4.0/onecall/current"
+)
+
+OPENWEATHER_ONECALL_TIMELINE_URL = (
+    "https://api.openweathermap.org/data/4.0/onecall/timeline/1h"
+)
 
 NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search"
 OSRM_ROUTE_URL = "https://router.project-osrm.org/route/v1/driving"

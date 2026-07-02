@@ -5,6 +5,9 @@ import streamlit as st
 
 from src.config.settings import FEATURED_DATA_FILE
 from src.services.hotspot_service import get_hotspot_summary
+from src.database.travel_plan_repository import (
+    get_latest_dashboard_analysis,
+)
 
 
 def render_metric_card(title: str, value: str, subtext: str) -> None:
@@ -53,35 +56,67 @@ def load_dashboard_stats() -> dict:
         "top_hotspots": hotspots_df,
     }
 
-
 def render_latest_route_analysis() -> None:
-    route_result = st.session_state.get("latest_route_result")
-    route_input = st.session_state.get("latest_route_input")
 
     st.subheader("Latest Route Analysis")
 
-    if route_result is None or route_input is None:
-        st.info("No route has been analyzed yet. Go to Route Analysis and run a prediction.")
+    route_result = st.session_state.get("latest_route_result")
+    route_input = st.session_state.get("latest_route_input")
+
+    if route_result and route_input:
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown(f"**From:** {route_input['from_place']}")
+            st.markdown(f"**To:** {route_input['to_place']}")
+            st.markdown(f"**Distance:** {route_result['route_distance_km']:.1f} km")
+
+        with col2:
+            st.markdown(f"**ETA:** {route_result['route_duration_min']:.0f} min")
+            st.markdown(f"**Risk Score:** {route_result['weighted_score'] * 30:.1f}")
+
+            risk = route_result["route_risk"]
+            risk_class = f"risk-{risk.lower()}"
+
+            st.markdown(
+                f'<span class="risk-badge {risk_class}">{risk} Risk</span>',
+                unsafe_allow_html=True,
+            )
+
+        return
+
+    latest = get_latest_dashboard_analysis()
+
+    if latest is None:
+
+        st.info(
+            "No route analysis has been performed yet."
+        )
+
         return
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown(f"**From:** {route_input['from_place']}")
-        st.markdown(f"**To:** {route_input['to_place']}")
-        st.markdown(f"**Distance:** {route_result['route_distance_km']:.1f} km")
+
+        st.markdown(f"**From:** {latest['from_place']}")
+        st.markdown(f"**To:** {latest['to_place']}")
+        st.markdown(f"**Distance:** {latest['distance']:.1f} km")
 
     with col2:
-        st.markdown(f"**ETA:** {route_result['route_duration_min']:.0f} min")
-        st.markdown(f"**Risk Score:** {route_result['weighted_score'] * 30:.1f}")
 
-        risk = route_result["route_risk"]
+        st.markdown(f"**ETA:** {latest['eta']:.0f} min")
+        st.markdown(f"**Weather:** {latest['weather']}")
+
+        risk = latest["route_risk"]
+
         risk_class = f"risk-{risk.lower()}"
+
         st.markdown(
             f'<span class="risk-badge {risk_class}">{risk} Risk</span>',
             unsafe_allow_html=True,
         )
-
 
 def render_current_alerts() -> None:
     st.subheader("Current Alerts")

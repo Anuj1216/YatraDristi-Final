@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from email.mime import base
 from email.mime import base
 from typing import Any, Dict, List, Tuple
 import pandas as pd
+from streamlit import context
 
 from src.config.settings import (
     FEATURED_DATA_FILE,
@@ -17,7 +18,14 @@ from src.services.routing_service import geocode_and_route
 from src.utils.geo_utils import haversine_distance_km, split_route_into_segments
 from src.inference.predictor import predict_base_risk
 from src.inference.risk_adjuster import adjust_risk_with_weather
-from src.services.weather_service import get_current_weather
+from src.services.weather_service import get_current_weather, get_forecast_for_datetime
+import src.services.weather_service as ws
+
+from src.utils.geo_utils import (
+    haversine_distance_km,
+    split_route_into_segments,
+    find_nearest_historical_context,
+)
 
 
 def _load_data() -> pd.DataFrame:
@@ -210,9 +218,19 @@ def _generate_recommendations(route_risk: str, highest_segment: Dict[str, Any], 
     else:
         travel_decision = "Travel conditions appear manageable with normal precautions."
 
+
+    weather_types = []
+
+    for seg in highest_segment.get("all_segments", []):
+        weather = seg.get("weather_main")
+        if weather and weather not in weather_types:
+            weather_types.append(weather)
+
+    weather_summary = " + ".join(weather_types) if weather_types else highest_segment.get("weather_main", "Unknown")
+
     return {
         "travel_decision": travel_decision,
-        "summary": f"Overall route risk is {route_risk}. Main weather concern: {highest_segment.get('weather_main', 'Unknown')}.",
+        "summary": f"Overall route risk is {route_risk}. Weather along the route: {weather_summary}.",
         "travel_advice": [
             "Monitor weather and road conditions before departure.",
             "Stay alert near the highest-risk segment.",
@@ -298,22 +316,68 @@ def run_route_risk_prediction_pipeline(
     for i, seg in enumerate(segments):
         mid_lat, mid_lon = seg["midpoint"]
     
-        segment_place = segment_names[i].split("→")[0].strip()
+        segment_place = segment_names[i]
+
+        prediction_place = segment_place.split(" → ")[0]
 
         base = predict_base_risk(
             date=date,
             time=time,
-            place_name=segment_place,
+            place_name=prediction_place,
             latitude=mid_lat,
             longitude=mid_lon,
             vehicle_involved=vehicle_involved,
             reason=reason,
         )
 
-        weather = get_current_weather(
-            mid_lat,
-            mid_lon
+        from datetime import datetime
+        from datetime import date as date_type
+        from datetime import time as time_type
+
+        # Convert date if needed
+        if isinstance(date, str):
+            date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+        elif isinstance(date, date_type):
+            date_obj = date
+        else:
+            date_obj = pd.to_datetime(date).date()
+
+        # Convert time if needed
+        if isinstance(time, str):
+
+            # Handle ranges like "12:00 - 15:00"
+            if "-" in time:
+                start_time = time.split("-")[0].strip()
+            else:
+                start_time = time.strip()
+
+            time_obj = datetime.strptime(
+                start_time,
+                "%H:%M"
+            ).time()
+
+        else:
+            time_obj = time
+
+        travel_datetime = datetime.combine(
+            date,
+            time_obj,
         )
+
+        if date_obj == datetime.now().date():
+
+            weather = get_current_weather(
+                mid_lat,
+                mid_lon,
+            )
+
+        else:
+
+            weather = get_forecast_for_datetime(
+                mid_lat,
+                mid_lon,
+                travel_datetime,
+            )
 
         adjusted = adjust_risk_with_weather(
             base_risk=base["predicted_risk"],
@@ -328,7 +392,7 @@ def run_route_risk_prediction_pipeline(
 
         segment_results.append({
             "segment_id": i + 1,
-            "segment_name": segment_names[i],
+            "segment_name": segment_place,
             "distance_km": seg["distance_km"],
             "midpoint_latitude": round(float(mid_lat), 6),
             "midpoint_longitude": round(float(mid_lon), 6),
@@ -348,6 +412,30 @@ def run_route_risk_prediction_pipeline(
             "segment_points": seg["points"],
         })
 
+        merged_segments = []
+
+        for segment in segment_results:
+
+            if (
+                merged_segments
+                and merged_segments[-1]["segment_name"] == segment["segment_name"]
+            ):
+
+                previous = merged_segments[-1]
+
+                if (
+                    RISK_SCORE_MAP[segment["adjusted_risk"]]
+                    >
+                    RISK_SCORE_MAP[previous["adjusted_risk"]]
+                ):
+                    merged_segments[-1] = segment
+
+            else:
+
+                merged_segments.append(segment)
+
+        segment_results = merged_segments
+
     route_agg = _aggregate_route_risk(segment_results)
 
     highest_segment = max(
@@ -360,6 +448,8 @@ def run_route_risk_prediction_pipeline(
             "visibility_m": 0,
         },
     )
+
+    highest_segment["all_segments"] = segment_results
 
     recommendations = _generate_recommendations(
         route_risk=route_agg["route_risk"],

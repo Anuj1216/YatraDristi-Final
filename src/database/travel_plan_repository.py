@@ -563,3 +563,39 @@ def notification_exists(
     conn.close()
 
     return exists
+
+
+def get_latest_dashboard_analysis():
+
+    conn = get_connection()
+
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute(
+        """
+        SELECT
+            tp.from_place,
+            tp.to_place,
+            tp.travel_date,
+            tp.travel_time,
+            tp.vehicle,
+            rh.route_risk,
+            rh.risk_score,
+            rh.route_distance_km AS distance,
+            rh.route_duration_min AS eta,
+            rh.weather_main AS weather,
+            rh.analyzed_at AS created_at
+        FROM route_history rh
+        JOIN travel_plans tp
+            ON rh.travel_plan_id = tp.id
+        ORDER BY rh.analyzed_at DESC
+        LIMIT 1
+        """
+    )
+
+    result = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return result

@@ -8,8 +8,8 @@ import requests
 
 from src.config.settings import (
     OPENWEATHER_API_KEY,
-    OPENWEATHER_CURRENT_URL,
-    OPENWEATHER_FORECAST_URL,
+    OPENWEATHER_ONECALL_CURRENT_URL,
+    OPENWEATHER_ONECALL_TIMELINE_URL,
 )
 
 
@@ -40,179 +40,183 @@ def _safe_nested_get(data: Dict[str, Any], *keys: str, default: Any = None) -> A
     return current
 
 
-def _normalize_weather_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
-    weather_list = payload.get("weather", [])
-    primary_weather = weather_list[0] if isinstance(weather_list, list) and weather_list else {}
+def _normalize_weather_payload(payload):
 
-    normalized = {
-        "location_name": payload.get("name", "Unknown"),
-        "country_code": _safe_nested_get(payload, "sys", "country", default=""),
-        "weather_main": primary_weather.get("main", "Unknown"),
-        "weather_description": primary_weather.get("description", "unknown"),
-        "temperature_c": float(_safe_nested_get(payload, "main", "temp", default=0.0) or 0.0),
-        "feels_like_c": float(_safe_nested_get(payload, "main", "feels_like", default=0.0) or 0.0),
-        "humidity_percent": int(_safe_nested_get(payload, "main", "humidity", default=0) or 0),
-        "pressure_hpa": int(_safe_nested_get(payload, "main", "pressure", default=0) or 0),
-        "visibility_m": int(payload.get("visibility", 0) or 0),
-        "wind_speed_mps": float(_safe_nested_get(payload, "wind", "speed", default=0.0) or 0.0),
-        "wind_deg": int(_safe_nested_get(payload, "wind", "deg", default=0) or 0),
-        "cloudiness_percent": int(_safe_nested_get(payload, "clouds", "all", default=0) or 0),
-        "rain_1h_mm": float(_safe_nested_get(payload, "rain", "1h", default=0.0) or 0.0),
-        "snow_1h_mm": float(_safe_nested_get(payload, "snow", "1h", default=0.0) or 0.0),
+    current = payload["data"][0]
+
+    weather = current["weather"][0]
+
+    return {
+
+        "location_name": "Route Segment",
+
+        "country_code": "",
+
+        "weather_main": weather["main"],
+
+        "weather_description": weather["description"],
+
+        "temperature_c": current["temp"],
+
+        "feels_like_c": current["feels_like"],
+
+        "humidity_percent": current["humidity"],
+
+        "pressure_hpa": current["pressure"],
+
+        "visibility_m": current["visibility"],
+
+        "wind_speed_mps": current["wind_speed"],
+
+        "wind_deg": current["wind_deg"],
+
+        "cloudiness_percent": current["clouds"],
+
+        "rain_1h_mm": current.get("rain", {}).get("1h", 0),
+
+        "snow_1h_mm": current.get("snow", {}).get("1h", 0),
+
+        "uvi": current.get("uvi", 0),
+
+        "dew_point": current.get("dew_point", 0),
+
+        "has_rain": "rain" in current,
+
+        "has_snow": "snow" in current,
+
     }
 
-    normalized["has_rain"] = normalized["rain_1h_mm"] > 0
-    normalized["has_snow"] = normalized["snow_1h_mm"] > 0
+def fetch_current_weather(latitude: float, longitude: float):
 
-    return normalized
-
-
-def fetch_current_weather(latitude: float, longitude: float) -> Dict[str, Any]:
     validate_weather_api_key()
     validate_coordinates(latitude, longitude)
 
-    params = {
-        "lat": float(latitude),
-        "lon": float(longitude),
-        "appid": OPENWEATHER_API_KEY,
-        "units": "metric",
-    }
+    response = requests.get(
+        OPENWEATHER_ONECALL_CURRENT_URL,
+        params={
+            "lat": latitude,
+            "lon": longitude,
+            "appid": OPENWEATHER_API_KEY,
+            "units": "metric",
+        },
+        timeout=20,
+    )
 
-    try:
-        response = requests.get(
-            OPENWEATHER_CURRENT_URL,
-            params=params,
-            timeout=20,
-        )
+    response.raise_for_status()
+
+    return response.json()
+
+def fetch_forecast_weather(latitude: float, longitude: float):
+
+
+    validate_weather_api_key()
+    validate_coordinates(latitude, longitude)
+
+    response = requests.get(
+        OPENWEATHER_ONECALL_TIMELINE_URL,
+        params={
+            "lat": latitude,
+            "lon": longitude,
+            "appid": OPENWEATHER_API_KEY,
+            "units": "metric",
+        },
+        timeout=20,
+    )
+
+    response.raise_for_status()
+
+    payload = response.json()
+
+    all_data = payload["data"]
+
+    next_url = payload.get("next")
+
+    while next_url:
+
+        response = requests.get(next_url, timeout=20)
         response.raise_for_status()
-    except requests.RequestException as exc:
-        raise WeatherServiceError(f"Weather API request failed: {exc}") from exc
 
-    try:
-        payload = response.json()
-    except ValueError as exc:
-        raise WeatherServiceError("Weather API returned invalid JSON.") from exc
+        next_payload = response.json()
 
-    if not isinstance(payload, dict):
-        raise WeatherServiceError("Unexpected weather API response format.")
+        all_data.extend(next_payload["data"])
 
-    if str(payload.get("cod")) not in {"200", "200.0"} and payload.get("cod") != 200:
-        message = payload.get("message", "Unknown weather API error")
-        raise WeatherServiceError(f"Weather API error: {message}")
+        next_url = next_payload.get("next")
 
     return payload
-
+    
 
 def get_current_weather(latitude: float, longitude: float) -> Dict[str, Any]:
     raw_payload = fetch_current_weather(latitude=latitude, longitude=longitude)
     return _normalize_weather_payload(raw_payload)
 
 
-def fetch_forecast_weather(latitude: float, longitude: float) -> Dict[str, Any]:
-    validate_weather_api_key()
-    validate_coordinates(latitude, longitude)
+def normalize_forecast_item(item):
 
-    params = {
-        "lat": float(latitude),
-        "lon": float(longitude),
-        "appid": OPENWEATHER_API_KEY,
-        "units": "metric",
+    weather = item["weather"][0]
+
+    return {
+
+        "forecast_time": pd.to_datetime(
+            item["dt"],
+            unit="s",
+        ),
+
+        "weather_main": weather["main"],
+
+        "weather_description": weather["description"],
+
+        "temperature_c": item["temp"],
+
+        "feels_like_c": item["feels_like"],
+
+        "humidity_percent": item["humidity"],
+
+        "pressure_hpa": item["pressure"],
+
+        "visibility_m": item["visibility"],
+
+        "wind_speed_mps": item["wind_speed"],
+
+        "wind_deg": item["wind_deg"],
+
+        "cloudiness_percent": item["clouds"],
+
+        "rain_1h_mm": item.get("rain", {}).get("1h", 0),
+
+        "snow_1h_mm": item.get("snow", {}).get("1h", 0),
+
+        "has_rain": "rain" in item,
+
+        "has_snow": "snow" in item,
+
     }
-
-    try:
-        response = requests.get(
-            OPENWEATHER_FORECAST_URL,
-            params=params,
-            timeout=20,
-        )
-        response.raise_for_status()
-    except requests.RequestException as exc:
-        raise WeatherServiceError(f"Forecast API request failed: {exc}") from exc
-
-    try:
-        payload = response.json()
-    except ValueError as exc:
-        raise WeatherServiceError("Forecast API returned invalid JSON.") from exc
-
-    if not isinstance(payload, dict):
-        raise WeatherServiceError("Unexpected forecast API response format.")
-
-    if str(payload.get("cod")) not in {"200", "200.0"} and payload.get("cod") != "200":
-        message = payload.get("message", "Unknown forecast API error")
-        raise WeatherServiceError(f"Forecast API error: {message}")
-
-    return payload
-
-
-def normalize_forecast_item(item: Dict[str, Any], city_name: str = "Unknown") -> Dict[str, Any]:
-    weather_list = item.get("weather", [])
-    primary_weather = weather_list[0] if isinstance(weather_list, list) and weather_list else {}
-
-    forecast_time_raw = item.get("dt_txt")
-    forecast_time = pd.to_datetime(forecast_time_raw, errors="coerce")
-
-    normalized = {
-        "location_name": city_name,
-        "forecast_time": forecast_time,
-        "forecast_time_str": str(forecast_time_raw),
-        "weather_main": primary_weather.get("main", "Unknown"),
-        "weather_description": primary_weather.get("description", "unknown"),
-        "temperature_c": float(_safe_nested_get(item, "main", "temp", default=0.0) or 0.0),
-        "feels_like_c": float(_safe_nested_get(item, "main", "feels_like", default=0.0) or 0.0),
-        "humidity_percent": int(_safe_nested_get(item, "main", "humidity", default=0) or 0),
-        "pressure_hpa": int(_safe_nested_get(item, "main", "pressure", default=0) or 0),
-        "visibility_m": int(item.get("visibility", 0) or 0),
-        "wind_speed_mps": float(_safe_nested_get(item, "wind", "speed", default=0.0) or 0.0),
-        "wind_deg": int(_safe_nested_get(item, "wind", "deg", default=0) or 0),
-        "cloudiness_percent": int(_safe_nested_get(item, "clouds", "all", default=0) or 0),
-        "rain_3h_mm": float(_safe_nested_get(item, "rain", "3h", default=0.0) or 0.0),
-        "snow_3h_mm": float(_safe_nested_get(item, "snow", "3h", default=0.0) or 0.0),
-    }
-
-    normalized["rain_1h_mm"] = normalized["rain_3h_mm"] / 3 if normalized["rain_3h_mm"] else 0.0
-    normalized["snow_1h_mm"] = normalized["snow_3h_mm"] / 3 if normalized["snow_3h_mm"] else 0.0
-    normalized["has_rain"] = normalized["rain_3h_mm"] > 0
-    normalized["has_snow"] = normalized["snow_3h_mm"] > 0
-
-    return normalized
-
 
 def get_forecast_for_datetime(
-    latitude: float,
-    longitude: float,
-    target_datetime: datetime,
-) -> Dict[str, Any]:
-    payload = fetch_forecast_weather(latitude=latitude, longitude=longitude)
 
-    forecast_list = payload.get("list", [])
-    city_name = _safe_nested_get(payload, "city", "name", default="Unknown")
+    latitude,
+    longitude,
+    target_datetime,
 
-    if not forecast_list:
-        raise WeatherServiceError("Forecast list is empty.")
+):
 
-    normalized_items: List[Dict[str, Any]] = [
-        normalize_forecast_item(item, city_name=city_name)
-        for item in forecast_list
-    ]
-
-    valid_items = [
-        item for item in normalized_items
-        if pd.notna(item["forecast_time"])
-    ]
-
-    if not valid_items:
-        raise WeatherServiceError("Forecast data contains no valid timestamps.")
-
-    target_ts = pd.to_datetime(target_datetime)
-
-    nearest_item = min(
-        valid_items,
-        key=lambda item: abs(item["forecast_time"] - target_ts),
+    payload = fetch_forecast_weather(
+        latitude,
+        longitude,
     )
 
-    nearest_item["hours_from_target"] = round(
-        abs((nearest_item["forecast_time"] - target_ts).total_seconds()) / 3600.0,
-        2,
+    forecast_items = payload["data"]
+
+    forecasts = [
+        normalize_forecast_item(item)
+        for item in forecast_items
+    ]
+
+    target = pd.Timestamp(target_datetime)
+
+    nearest = min(
+        forecasts,
+        key=lambda x: abs(x["forecast_time"] - target),
     )
 
-    return nearest_item
+
+    return nearest
