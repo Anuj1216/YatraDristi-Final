@@ -196,3 +196,69 @@ padding:10px;
 
 border-radius:12px;
 }
+
+.alert-card{
+background:#ffffff;
+border-radius:14px;
+padding:18px;
+margin-bottom:18px;
+box-shadow:0 3px 12px rgba(0,0,0,.08);
+transition:.2s;
+}
+
+.alert-card:hover{
+transform:translateY(-2px);
+box-shadow:0 6px 18px rgba(0,0,0,.12);
+}
+
+.risk-high{
+border-left:8px solid #e53935;
+}
+
+.risk-medium{
+border-left:8px solid #fb8c00;
+}
+
+.risk-low{
+border-left:8px solid #43a047;
+}
+
+.route-title{
+font-size:22px;
+font-weight:700;
+margin-bottom:15px;
+color:#1f2937;
+}
+
+.route-info{
+font-size:15px;
+color:#4b5563;
+margin:6px 0;
+}
+
+.risk-pill{
+display:inline-block;
+padding:5px 12px;
+border-radius:20px;
+font-weight:600;
+color:white;
+font-size:13px;
+}
+
+.pill-high{
+background:#e53935;
+}
+
+.pill-medium{
+background:#fb8c00;
+}
+
+.pill-low{
+background:#43a047;
+}
+
+.last-analysis{
+font-size:13px;
+color:#6b7280;
+margin-top:10px;
+}
