@@ -114,6 +114,8 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
 
     processed_df["time"] = processed_df["time"].apply(standardize_time_slot)
     processed_df["place_name"] = processed_df["place_name"].apply(clean_place_name)
+    processed_df["locality"] = processed_df["locality"].fillna(processed_df["place_name"])
+    processed_df["locality"] = processed_df["locality"].astype(str).str.strip()
     processed_df["vehicle_involved"] = processed_df["vehicle_involved"].apply(clean_text)
     processed_df["reason"] = processed_df["reason"].apply(clean_text)
 
@@ -140,6 +142,7 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
         "is_weekend",
         "time",
         "place_name",
+        "locality",
         "latitude",
         "longitude",
         "vehicle_involved",

@@ -145,7 +145,13 @@ def add_severity_features(df: pd.DataFrame) -> pd.DataFrame:
 def add_location_frequency_feature(df: pd.DataFrame) -> pd.DataFrame:
     output_df = df.copy()
 
-    place_counts = output_df["place_name"].value_counts().to_dict()
+    place_counts = output_df["locality"].value_counts().to_dict()
+    output_df["place_accident_count"] = (
+        output_df["locality"]
+        .map(place_counts)
+        .fillna(0)
+        .astype(int)
+    )
     output_df["place_accident_count"] = output_df["place_name"].map(place_counts).fillna(0).astype(int)
 
     return output_df
@@ -177,6 +183,7 @@ def build_feature_engineered_dataset(df: pd.DataFrame) -> pd.DataFrame:
         "is_afternoon",
         "is_evening",
         "place_name",
+        "locality",
         "place_accident_count",
         "latitude",
         "longitude",

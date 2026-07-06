@@ -84,6 +84,7 @@ def get_risk_color(risk_label: str) -> str:
 def build_hotspot_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     required_columns = [
         "place_name",
+        "locality",
         "latitude",
         "longitude",
         "death",
@@ -104,7 +105,10 @@ def build_hotspot_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     grouped_df = (
-        working_df.groupby(["place_name", "latitude", "longitude"], as_index=False)
+    working_df.groupby(
+        ["place_name", "locality", "latitude", "longitude"],
+        as_index=False,
+    )
         .agg(
             accident_count=("place_name", "count"),
             total_death=("death", "sum"),
@@ -168,6 +172,7 @@ def add_hotspot_layer(map_object: folium.Map, hotspot_df: pd.DataFrame) -> None:
 
         popup_html = f"""
         <b>Place:</b> {row['place_name']}<br>
+        <b>Locality:</b> {row['locality']}<br>
         <b>Hotspot Level:</b> {hotspot_level}<br>
         <b>Accident Count:</b> {int(row['accident_count'])}<br>
         <b>Hotspot Score:</b> {float(row['hotspot_score']):.2f}<br>
@@ -184,7 +189,7 @@ def add_hotspot_layer(map_object: folium.Map, hotspot_df: pd.DataFrame) -> None:
             fill_color=color,
             fill_opacity=0.70,
             popup=folium.Popup(popup_html, max_width=300),
-            tooltip=f"{row['place_name']} ({hotspot_level})",
+            tooltip=f"{row['locality']} ({hotspot_level})",
         ).add_to(hotspot_group)
 
     hotspot_group.add_to(map_object)
